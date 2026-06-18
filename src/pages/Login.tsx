@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { trpc } from '@/providers/trpc';
 import {
@@ -37,15 +37,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [totpCode, setTotpCode] = useState('');
+  const [totpDigits, setTotpDigits] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // Store credentials to reuse in the TOTP step
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingPassword, setPendingPassword] = useState('');
+  const totpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const { data: providers } = trpc.auth.oauthProviders.useQuery();
   const loginMutation = trpc.auth.loginEmail.useMutation();
+  const loginTotpMutation = trpc.auth.loginTotp.useMutation();
   const registerMutation = trpc.auth.register.useMutation();
 
-  // Show OAuth errors from query params
   useEffect(() => {
     const err = searchParams.get('error');
     if (err === 'google_denied' || err === 'yandex_denied') {
@@ -55,14 +59,42 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  const totpCode = totpDigits.join('');
+
   const handleEmailSignIn = async () => {
     setError('');
     if (!email || !password) { setError('Please fill in all fields.'); return; }
     try {
-      await loginMutation.mutateAsync({ email, password });
-      navigate('/dashboard');
+      const result = await loginMutation.mutateAsync({ email, password });
+      if (result.requires2FA) {
+        // Store credentials for the TOTP step and switch view
+        setPendingEmail(email);
+        setPendingPassword(password);
+        setTotpDigits(['', '', '', '', '', '']);
+        setMode('2fa');
+        setTimeout(() => totpRefs.current[0]?.focus(), 100);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Sign in failed.');
+    }
+  };
+
+  const handleTotpVerify = async () => {
+    if (totpCode.length !== 6) return;
+    setError('');
+    try {
+      await loginTotpMutation.mutateAsync({
+        email: pendingEmail,
+        password: pendingPassword,
+        totpCode,
+      });
+      navigate('/dashboard');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Verification failed.');
+      setTotpDigits(['', '', '', '', '', '']);
+      setTimeout(() => totpRefs.current[0]?.focus(), 50);
     }
   };
 
@@ -89,7 +121,51 @@ export default function LoginPage() {
     }
   };
 
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const handleTotpDigitChange = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newDigits = [...totpDigits];
+    newDigits[index] = digit;
+    setTotpDigits(newDigits);
+
+    if (digit && index < 5) {
+      totpRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-verify when all 6 digits are filled
+    if (digit && index === 5) {
+      const code = newDigits.join('');
+      if (code.length === 6) {
+        setTimeout(() => handleTotpVerifyWithCode(code), 50);
+      }
+    }
+  };
+
+  const handleTotpDigitKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !totpDigits[index] && index > 0) {
+      totpRefs.current[index - 1]?.focus();
+    }
+    if (e.key === 'Enter' && totpCode.length === 6) {
+      handleTotpVerify();
+    }
+  };
+
+  const handleTotpVerifyWithCode = async (code: string) => {
+    setError('');
+    try {
+      await loginTotpMutation.mutateAsync({
+        email: pendingEmail,
+        password: pendingPassword,
+        totpCode: code,
+      });
+      navigate('/dashboard');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Verification failed.');
+      setTotpDigits(['', '', '', '', '', '']);
+      setTimeout(() => totpRefs.current[0]?.focus(), 50);
+    }
+  };
+
+  const isLoading = loginMutation.isPending || registerMutation.isPending || loginTotpMutation.isPending;
 
   const switchMode = (m: AuthMode) => {
     setMode(m);
@@ -133,23 +209,25 @@ export default function LoginPage() {
             boxShadow: '0 25px 60px rgba(0,0,0,0.4)',
           }}
         >
-          {/* Tab switcher */}
-          <div className="flex border-b" style={{ borderColor: 'rgba(148,163,184,0.1)' }}>
-            {(['signin', 'register'] as const).map(m => (
-              <button
-                key={m}
-                onClick={() => switchMode(m)}
-                className="flex-1 py-3.5 text-sm font-medium transition-colors"
-                style={{
-                  color: mode === m ? '#F1F5F9' : '#64748B',
-                  borderBottom: mode === m ? '2px solid #3B82F6' : '2px solid transparent',
-                  background: 'transparent',
-                }}
-              >
-                {m === 'signin' ? 'Sign In' : 'Create Account'}
-              </button>
-            ))}
-          </div>
+          {/* Tab switcher — hidden on 2FA step */}
+          {mode !== '2fa' && (
+            <div className="flex border-b" style={{ borderColor: 'rgba(148,163,184,0.1)' }}>
+              {(['signin', 'register'] as const).map(m => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  className="flex-1 py-3.5 text-sm font-medium transition-colors"
+                  style={{
+                    color: mode === m ? '#F1F5F9' : '#64748B',
+                    borderBottom: mode === m ? '2px solid #3B82F6' : '2px solid transparent',
+                    background: 'transparent',
+                  }}
+                >
+                  {m === 'signin' ? 'Sign In' : 'Create Account'}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="p-6">
             {/* Error / Success banners */}
@@ -224,7 +302,6 @@ export default function LoginPage() {
                 </Button>
 
                 <Divider />
-
                 <OAuthButtons providers={providers} />
               </>
             )}
@@ -347,7 +424,6 @@ export default function LoginPage() {
                 </Button>
 
                 <Divider />
-
                 <OAuthButtons providers={providers} />
               </>
             )}
@@ -363,26 +439,30 @@ export default function LoginPage() {
                     <Smartphone className="h-6 w-6" style={{ color: '#8B5CF6' }} />
                   </div>
                   <h2 className="text-base font-semibold mb-1" style={{ color: '#F1F5F9' }}>Two-Factor Authentication</h2>
-                  <p className="text-xs" style={{ color: '#64748B' }}>Enter the 6-digit code from your authenticator app</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>
+                    Enter the 6-digit code from your authenticator app
+                  </p>
                 </div>
 
-                <div className="flex justify-center gap-2 mb-4">
-                  {[0, 1, 2, 3, 4, 5].map(i => (
-                    <Input
+                {/* Individual digit inputs */}
+                <div className="flex justify-center gap-2 mb-6">
+                  {totpDigits.map((digit, i) => (
+                    <input
                       key={i}
+                      ref={el => { totpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
                       maxLength={1}
-                      className="w-11 h-12 text-center text-lg font-mono"
-                      style={INPUT_STYLE}
-                      value={totpCode[i] || ''}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        const newCode = totpCode.split('');
-                        newCode[i] = val;
-                        setTotpCode(newCode.join('').slice(0, 6));
-                        if (val && i < 5) {
-                          const next = e.target.parentElement?.querySelectorAll('input')[i + 1] as HTMLInputElement;
-                          next?.focus();
-                        }
+                      value={digit}
+                      onChange={e => handleTotpDigitChange(i, e.target.value)}
+                      onKeyDown={e => handleTotpDigitKeyDown(i, e)}
+                      onFocus={e => e.target.select()}
+                      className="w-11 h-12 text-center text-lg font-mono rounded-lg outline-none transition-all"
+                      style={{
+                        background: '#1A2540',
+                        border: `2px solid ${digit ? '#8B5CF6' : 'rgba(148, 163, 184, 0.15)'}`,
+                        color: '#F1F5F9',
+                        caretColor: 'transparent',
                       }}
                     />
                   ))}
@@ -391,18 +471,19 @@ export default function LoginPage() {
                 <Button
                   className="w-full h-10 text-sm mb-3 font-medium"
                   style={{ background: '#8B5CF6', color: '#fff' }}
-                  disabled={totpCode.length !== 6}
-                  onClick={() => { window.location.href = getKimiOAuthUrl(); }}
+                  disabled={totpCode.length !== 6 || isLoading}
+                  onClick={handleTotpVerify}
                 >
-                  Verify & Sign In
+                  {isLoading ? 'Verifying...' : 'Verify & Sign In'}
+                  {!isLoading && <Check className="h-4 w-4" />}
                 </Button>
 
                 <button
-                  onClick={() => switchMode('signin')}
+                  onClick={() => { switchMode('signin'); setPendingEmail(''); setPendingPassword(''); }}
                   className="w-full text-center text-xs py-2"
                   style={{ color: '#64748B' }}
                 >
-                  Back to sign in
+                  ← Back to sign in
                 </button>
               </>
             )}
@@ -476,20 +557,6 @@ function OAuthButtons({ providers }: { providers?: { google: boolean; yandex: bo
         <YandexIcon />
         {providers?.yandex ? 'Continue with Yandex' : 'Yandex (not configured)'}
       </button>
-
-      {/* Kimi */}
-      {providers?.kimi && (
-        <button
-          onClick={() => { window.location.href = '/api/oauth/callback?'; window.location.href = getKimiOAuthUrl(); }}
-          className="w-full h-10 flex items-center justify-center gap-3 rounded-lg text-sm font-medium transition-all"
-          style={{ background: '#1A2540', color: '#94A3B8', border: '1px solid rgba(148,163,184,0.15)' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#243447'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#1A2540'}
-        >
-          <Shield className="h-4 w-4" style={{ color: '#8B5CF6' }} />
-          Continue with Kimi
-        </button>
-      )}
     </div>
   );
 }
@@ -520,15 +587,4 @@ function YandexIcon() {
       <path d="M14.35 2H12.5C9.08 2 7 3.9 7 7.05c0 2.5 1.18 4.05 3.5 5.6L7 22h3.1l3.35-8.9 3.4 8.9H20L14.35 2zm-1.9 9.9c-1.65-1.15-2.4-2.2-2.4-4C10.05 5.4 11.15 4.3 13 4.3h1l2.85 7.6c-1.2.15-2.5-.25-4.4 0z" />
     </svg>
   );
-}
-
-function getKimiOAuthUrl() {
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
-  const authUrl = new URL(`${import.meta.env.VITE_PORTAL_AUTH_URL}/oauth/authorize`);
-  authUrl.searchParams.set('client_id', import.meta.env.VITE_APP_ID);
-  authUrl.searchParams.set('redirect_uri', redirectUri);
-  authUrl.searchParams.set('scope', 'user.info');
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('state', btoa(redirectUri));
-  return authUrl.toString();
 }

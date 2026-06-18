@@ -2,3 +2,5 @@
 - [Kimi Auth Lazy Init](kimi-auth.md) — JWKS must be lazily initialized via getJwks() wrapper; do NOT call createRemoteJWKSet at module load time (crashes before DB is ready).
 - [IDE File Persistence](ide-persistence.md) — IDE files stored in localStorage under key "ide_files_v2"; always load from storage, fall back to defaults.
 - [Icon Availability](icon-availability.md) — lucide-react has AreaChart, Keyboard, AlignLeft, LineChart, PieChart — all verified available at runtime.
+- [2FA & Auth Design](2fa-auth-design.md) — passwordHash column added to users table (separate from totpSecret); loginEmail returns requires2FA flag; loginTotp is the second step; legacy accounts migrated on first login.
+- [Rollup Native Fix](rollup-fix.md) — When rollup fails with "Cannot find @rollup/rollup-linux-x64-gnu", run npm install --ignore-scripts to fix missing optional native dependency.

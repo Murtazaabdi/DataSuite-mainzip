@@ -153,32 +153,57 @@ Be concise, professional, and provide actionable insights. Use markdown formatti
         ...history.map((m) => ({ role: m.role, content: m.content })),
       ];
 
-      // Call Kimi API (using the internal API)
+      // Call Gemini (primary) or Kimi (fallback)
       let aiResponse = "";
-      try {
-        const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.KIMI_API_KEY || ""}`,
-          },
-          body: JSON.stringify({
-            model: "moonshot-v1-8k",
-            messages: messagesForAI,
-            temperature: 0.7,
-            max_tokens: 2000,
-          }),
-        });
+      const geminiKey = process.env.GEMINI_API_KEY || "";
+      const kimiKey   = process.env.KIMI_API_KEY   || "";
 
-        if (response.ok) {
-          const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-          aiResponse = data.choices?.[0]?.message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.";
-        } else {
-          // Fallback response when API is not available
-          aiResponse = generateFallbackResponse(input.content);
-        }
-      } catch {
-        // Fallback response
+      if (geminiKey) {
+        try {
+          const geminiMessages = messagesForAI
+            .filter(m => m.role !== "system")
+            .map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+
+          const systemInst = messagesForAI.find(m => m.role === "system")?.content ?? "";
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: systemInst }] },
+                contents: geminiMessages,
+                generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
+              }),
+            }
+          );
+          if (response.ok) {
+            const data = await response.json() as any;
+            aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+          }
+        } catch {}
+      }
+
+      if (!aiResponse && kimiKey) {
+        try {
+          const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${kimiKey}` },
+            body: JSON.stringify({
+              model: "moonshot-v1-8k",
+              messages: messagesForAI,
+              temperature: 0.7,
+              max_tokens: 2000,
+            }),
+          });
+          if (response.ok) {
+            const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+            aiResponse = data.choices?.[0]?.message?.content ?? "";
+          }
+        } catch {}
+      }
+
+      if (!aiResponse) {
         aiResponse = generateFallbackResponse(input.content);
       }
 

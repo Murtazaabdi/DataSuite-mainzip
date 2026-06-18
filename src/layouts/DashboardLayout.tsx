@@ -3,43 +3,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { trpc } from '@/providers/trpc';
 import {
-  FolderTree,
-  Database,
-  LayoutDashboard,
-  Sparkles,
-  FileText,
-  Settings,
-  Shield,
-  Search,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  LogOut,
-  Code2,
-  Terminal,
-  BarChart3,
-  Bot,
-  BookOpen,
-  Monitor,
-  CheckCircle2,
-  AlertCircle,
-  Info,
-  Clock,
-  GitBranch,
-  Wifi,
-  Home,
-  PanelLeftClose,
-  PanelLeft,
+  Database, LayoutDashboard, Sparkles, FileText, Settings, Shield,
+  Search, Bell, ChevronLeft, ChevronRight, X, LogOut, Code2, Terminal,
+  BarChart3, Bot, BookOpen, Monitor, CheckCircle2, AlertCircle, Info,
+  Clock, GitBranch, Wifi, Home, PanelLeftClose, PanelLeft, Link2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -64,12 +36,13 @@ const NAV_SECTIONS = [
   {
     label: 'Workspace',
     items: [
-      { id: 'home', label: 'Overview', icon: Home, path: '/dashboard' },
-      { id: 'ide', label: 'IDE', icon: FolderTree, path: '/dashboard/ide' },
-      { id: 'sql', label: 'SQL Workbench', icon: Database, path: '/dashboard/sql' },
-      { id: 'studio', label: 'Dashboard Studio', icon: LayoutDashboard, path: '/dashboard/studio' },
-      { id: 'ai', label: 'AI Analyst', icon: Sparkles, path: '/dashboard/ai' },
-      { id: 'workspace', label: 'Documents', icon: FileText, path: '/dashboard/workspace' },
+      { id: 'home',        label: 'Overview',        icon: Home,          path: '/dashboard' },
+      { id: 'ide',         label: 'IDE',             icon: Code2,         path: '/dashboard/ide' },
+      { id: 'sql',         label: 'SQL Workbench',   icon: Database,      path: '/dashboard/sql' },
+      { id: 'studio',      label: 'Dashboard Studio',icon: LayoutDashboard,path: '/dashboard/studio' },
+      { id: 'ai',          label: 'AI Analyst',      icon: Sparkles,      path: '/dashboard/ai' },
+      { id: 'datasources', label: 'Data Sources',    icon: Link2,         path: '/dashboard/datasources' },
+      { id: 'workspace',   label: 'Documents',       icon: FileText,      path: '/dashboard/workspace' },
     ],
   },
   {
@@ -81,46 +54,48 @@ const NAV_SECTIONS = [
 ];
 
 const ACTIVITY_ITEMS = [
-  { id: 'home', icon: Home, path: '/dashboard', title: 'Overview' },
-  { id: 'ide', icon: Code2, path: '/dashboard/ide', title: 'IDE' },
-  { id: 'sql', icon: Database, path: '/dashboard/sql', title: 'SQL' },
-  { id: 'studio', icon: BarChart3, path: '/dashboard/studio', title: 'Studio' },
-  { id: 'ai', icon: Bot, path: '/dashboard/ai', title: 'AI Analyst' },
-  { id: 'workspace', icon: BookOpen, path: '/dashboard/workspace', title: 'Documents' },
+  { id: 'home',        icon: Home,          path: '/dashboard',             title: 'Overview' },
+  { id: 'ide',         icon: Code2,         path: '/dashboard/ide',         title: 'IDE' },
+  { id: 'sql',         icon: Database,      path: '/dashboard/sql',         title: 'SQL Workbench' },
+  { id: 'studio',      icon: BarChart3,     path: '/dashboard/studio',      title: 'Dashboard Studio' },
+  { id: 'ai',          icon: Bot,           path: '/dashboard/ai',          title: 'AI Analyst' },
+  { id: 'datasources', icon: Link2,         path: '/dashboard/datasources', title: 'Data Sources' },
+  { id: 'workspace',   icon: BookOpen,      path: '/dashboard/workspace',   title: 'Documents' },
 ];
 
 const COMMAND_PALETTE_ITEMS = [
-  { label: 'Overview', shortcut: 'Ctrl+H', path: '/dashboard', icon: Monitor },
-  { label: 'IDE', shortcut: 'Ctrl+1', path: '/dashboard/ide', icon: Code2 },
-  { label: 'SQL Workbench', shortcut: 'Ctrl+2', path: '/dashboard/sql', icon: Database },
-  { label: 'Dashboard Studio', shortcut: 'Ctrl+3', path: '/dashboard/studio', icon: BarChart3 },
-  { label: 'AI Analyst', shortcut: 'Ctrl+4', path: '/dashboard/ai', icon: Bot },
-  { label: 'Documents', shortcut: 'Ctrl+5', path: '/dashboard/workspace', icon: BookOpen },
-  { label: 'Settings', shortcut: 'Ctrl+,', path: '/dashboard/settings', icon: Settings },
+  { label: 'Overview',         shortcut: 'Ctrl+H', path: '/dashboard',             icon: Monitor },
+  { label: 'IDE',              shortcut: 'Ctrl+1', path: '/dashboard/ide',         icon: Code2 },
+  { label: 'SQL Workbench',    shortcut: 'Ctrl+2', path: '/dashboard/sql',         icon: Database },
+  { label: 'Dashboard Studio', shortcut: 'Ctrl+3', path: '/dashboard/studio',      icon: BarChart3 },
+  { label: 'AI Analyst',       shortcut: 'Ctrl+4', path: '/dashboard/ai',          icon: Bot },
+  { label: 'Data Sources',     shortcut: 'Ctrl+5', path: '/dashboard/datasources', icon: Link2 },
+  { label: 'Documents',        shortcut: 'Ctrl+6', path: '/dashboard/workspace',   icon: BookOpen },
+  { label: 'Settings',         shortcut: 'Ctrl+,', path: '/dashboard/settings',    icon: Settings },
 ];
 
 const ROUTE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
-  '/dashboard': { label: 'Overview', icon: <Monitor className="h-3.5 w-3.5" /> },
-  '/dashboard/ide': { label: 'IDE', icon: <Code2 className="h-3.5 w-3.5" /> },
-  '/dashboard/sql': { label: 'SQL Workbench', icon: <Terminal className="h-3.5 w-3.5" /> },
-  '/dashboard/studio': { label: 'Dashboard Studio', icon: <BarChart3 className="h-3.5 w-3.5" /> },
-  '/dashboard/ai': { label: 'AI Analyst', icon: <Bot className="h-3.5 w-3.5" /> },
-  '/dashboard/workspace': { label: 'Documents', icon: <BookOpen className="h-3.5 w-3.5" /> },
-  '/dashboard/settings': { label: 'Settings', icon: <Settings className="h-3.5 w-3.5" /> },
-  '/admin': { label: 'Administration', icon: <Shield className="h-3.5 w-3.5" /> },
+  '/dashboard':             { label: 'Overview',         icon: <Monitor className="h-3.5 w-3.5" /> },
+  '/dashboard/ide':         { label: 'IDE',              icon: <Code2 className="h-3.5 w-3.5" /> },
+  '/dashboard/sql':         { label: 'SQL Workbench',    icon: <Terminal className="h-3.5 w-3.5" /> },
+  '/dashboard/studio':      { label: 'Dashboard Studio', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+  '/dashboard/ai':          { label: 'AI Analyst',       icon: <Bot className="h-3.5 w-3.5" /> },
+  '/dashboard/datasources': { label: 'Data Sources',     icon: <Link2 className="h-3.5 w-3.5" /> },
+  '/dashboard/workspace':   { label: 'Documents',        icon: <BookOpen className="h-3.5 w-3.5" /> },
+  '/dashboard/settings':    { label: 'Settings',         icon: <Settings className="h-3.5 w-3.5" /> },
+  '/admin':                 { label: 'Administration',   icon: <Shield className="h-3.5 w-3.5" /> },
 };
 
 const INITIAL_NOTIFICATIONS: Notification[] = [
-  { id: '1', type: 'success', title: 'Platform Ready', message: 'All services are operational.', time: 'Just now', read: false },
-  { id: '2', type: 'info', title: 'New AI Model Available', message: 'Kimi v2 is now available for your tier.', time: '1h ago', read: false },
-  { id: '3', type: 'warning', title: 'Storage Usage', message: 'You have used 78% of your storage quota.', time: '3h ago', read: true },
+  { id: '1', type: 'success', title: 'Platform Ready',         message: 'All services are operational.',    time: 'Just now', read: false },
+  { id: '2', type: 'info',    title: 'Gemini AI Available',    message: 'Set GEMINI_API_KEY to enable AI.', time: '1h ago',   read: false },
 ];
 
 function NotificationIcon({ type }: { type: Notification['type'] }) {
   const cls = 'h-3.5 w-3.5';
   if (type === 'success') return <CheckCircle2 className={cls} style={{ color: 'var(--ds-success)' }} />;
-  if (type === 'error') return <AlertCircle className={cls} style={{ color: 'var(--ds-error)' }} />;
-  if (type === 'warning') return <AlertCircle className={cls} style={{ color: 'var(--ds-warning)' }} />;
+  if (type === 'error')   return <AlertCircle  className={cls} style={{ color: 'var(--ds-error)' }} />;
+  if (type === 'warning') return <AlertCircle  className={cls} style={{ color: 'var(--ds-warning)' }} />;
   return <Info className={cls} style={{ color: 'var(--ds-accent)' }} />;
 }
 
@@ -165,15 +140,13 @@ export default function DashboardLayout() {
       if (e.key === '2') { e.preventDefault(); navigate('/dashboard/sql'); return; }
       if (e.key === '3') { e.preventDefault(); navigate('/dashboard/studio'); return; }
       if (e.key === '4') { e.preventDefault(); navigate('/dashboard/ai'); return; }
-      if (e.key === '5') { e.preventDefault(); navigate('/dashboard/workspace'); return; }
+      if (e.key === '5') { e.preventDefault(); navigate('/dashboard/datasources'); return; }
+      if (e.key === '6') { e.preventDefault(); navigate('/dashboard/workspace'); return; }
       if (e.key === ',') { e.preventDefault(); navigate('/dashboard/settings'); return; }
       if (e.key === 'h' || e.key === 'H') { e.preventDefault(); navigate('/dashboard'); return; }
       if (e.key === 'b' || e.key === 'B') { e.preventDefault(); setSidebarCollapsed(v => !v); return; }
     }
-    if (e.key === 'Escape') {
-      setShowSearch(false);
-      setShowNotifications(false);
-    }
+    if (e.key === 'Escape') { setShowSearch(false); setShowNotifications(false); }
   }, [navigate]);
 
   useEffect(() => {
@@ -186,9 +159,9 @@ export default function DashboardLayout() {
     setTabs(prev => {
       const newTabs = prev.filter(t => t.id !== tabId);
       if (activeTab === tabId && newTabs.length > 0) {
-        const lastTab = newTabs[newTabs.length - 1];
-        navigate(lastTab.path);
-        setActiveTab(lastTab.path);
+        const last = newTabs[newTabs.length - 1];
+        navigate(last.path);
+        setActiveTab(last.path);
       } else if (newTabs.length === 0) {
         navigate('/dashboard');
       }
@@ -197,15 +170,10 @@ export default function DashboardLayout() {
   };
 
   const isActive = (path: string) => location.pathname === path;
-
   const filteredCommands = COMMAND_PALETTE_ITEMS.filter(item =>
     item.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const pathParts = location.pathname.split('/').filter(Boolean);
   const usagePercent = aiUsage ? Math.min((aiUsage.daily / aiUsage.limit) * 100, 100) : 0;
 
@@ -220,9 +188,7 @@ export default function DashboardLayout() {
           <span className="ds-titlebar-name">DataSuite</span>
           <span className="ds-titlebar-sub">Enterprise</span>
           {user?.role === 'admin' && (
-            <button className="ds-badge accent ml-1" onClick={() => navigate('/admin')}>
-              Admin
-            </button>
+            <button className="ds-badge accent ml-1" onClick={() => navigate('/admin')}>Admin</button>
           )}
           <div className="ds-titlebar-divider" />
           <button className="ds-icon-btn" onClick={() => navigate(-1)} title="Back">
@@ -240,11 +206,7 @@ export default function DashboardLayout() {
         </div>
 
         <div className="flex items-center gap-1">
-          <button
-            className="ds-icon-btn"
-            onClick={() => setSidebarCollapsed(v => !v)}
-            title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-          >
+          <button className="ds-icon-btn" onClick={() => setSidebarCollapsed(v => !v)} title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}>
             {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
           </button>
 
@@ -252,10 +214,8 @@ export default function DashboardLayout() {
             <button className="ds-icon-btn relative" onClick={() => setShowNotifications(!showNotifications)}>
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-white font-semibold"
-                  style={{ background: 'var(--ds-error)', fontSize: 9, padding: '0 3px' }}
-                >
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-white font-semibold"
+                  style={{ background: 'var(--ds-error)', fontSize: 9, padding: '0 3px' }}>
                   {unreadCount}
                 </span>
               )}
@@ -267,11 +227,7 @@ export default function DashboardLayout() {
                   <span>Notifications</span>
                   <div className="flex items-center gap-2">
                     {unreadCount > 0 && (
-                      <button
-                        className="text-[11px]"
-                        style={{ color: 'var(--ds-accent)' }}
-                        onClick={markAllRead}
-                      >
+                      <button className="text-[11px]" style={{ color: 'var(--ds-accent)' }} onClick={markAllRead}>
                         Mark all read
                       </button>
                     )}
@@ -282,11 +238,8 @@ export default function DashboardLayout() {
                 </div>
                 <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                   {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={cn('ds-notif-item', !n.read && 'unread')}
-                      onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-                    >
+                    <div key={n.id} className={cn('ds-notif-item', !n.read && 'unread')}
+                      onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}>
                       <NotificationIcon type={n.type} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium" style={{ color: 'var(--ds-text)' }}>{n.title}</p>
@@ -303,10 +256,8 @@ export default function DashboardLayout() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 h-7 px-2 rounded-sm hover:bg-[var(--ds-hover)] transition-colors">
-                <div
-                  className="w-5 h-5 rounded-sm flex items-center justify-center text-[10px] font-bold"
-                  style={{ background: 'var(--ds-accent)', color: '#fff' }}
-                >
+                <div className="w-5 h-5 rounded-sm flex items-center justify-center text-[10px] font-bold"
+                  style={{ background: 'var(--ds-accent)', color: '#fff' }}>
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <span className="text-xs max-w-[100px] truncate" style={{ color: 'var(--ds-text-muted)' }}>
@@ -318,12 +269,8 @@ export default function DashboardLayout() {
               <DropdownMenuLabel style={{ color: 'var(--ds-text)' }}>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm">{user?.name || 'User'}</span>
-                  <span className="text-[11px] font-normal" style={{ color: 'var(--ds-text-dim)' }}>
-                    {user?.email || user?.unionId || ''}
-                  </span>
-                  <span className="ds-badge accent w-fit mt-1">
-                    {(user?.tier || 'free').replace('_', ' ')}
-                  </span>
+                  <span className="text-[11px] font-normal" style={{ color: 'var(--ds-text-dim)' }}>{user?.email || user?.unionId || ''}</span>
+                  <span className="ds-badge accent w-fit mt-1">{(user?.tier || 'free').replace('_', ' ')}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator style={{ background: 'var(--ds-border-subtle)' }} />
@@ -354,30 +301,20 @@ export default function DashboardLayout() {
           {ACTIVITY_ITEMS.map(item => {
             const Icon = item.icon;
             return (
-              <button
-                key={item.id}
-                className={cn('ds-activity-item', isActive(item.path) && 'active')}
-                onClick={() => navigate(item.path)}
-                title={item.title}
-              >
+              <button key={item.id} className={cn('ds-activity-item', isActive(item.path) && 'active')}
+                onClick={() => navigate(item.path)} title={item.title}>
                 <Icon className="h-5 w-5" />
               </button>
             );
           })}
           <div className="ds-activity-spacer" />
-          <button
-            className={cn('ds-activity-item', isActive('/dashboard/settings') && 'active')}
-            onClick={() => navigate('/dashboard/settings')}
-            title="Settings"
-          >
+          <button className={cn('ds-activity-item', isActive('/dashboard/settings') && 'active')}
+            onClick={() => navigate('/dashboard/settings')} title="Settings">
             <Settings className="h-5 w-5" />
           </button>
           {user?.role === 'admin' && (
-            <button
-              className={cn('ds-activity-item', isActive('/admin') && 'active')}
-              onClick={() => navigate('/admin')}
-              title="Administration"
-            >
+            <button className={cn('ds-activity-item', isActive('/admin') && 'active')}
+              onClick={() => navigate('/admin')} title="Administration">
               <Shield className="h-5 w-5" />
             </button>
           )}
@@ -399,11 +336,8 @@ export default function DashboardLayout() {
                 {section.items.map(item => {
                   const Icon = item.icon;
                   return (
-                    <button
-                      key={item.id}
-                      className={cn('ds-nav-item', isActive(item.path) && 'active')}
-                      onClick={() => navigate(item.path)}
-                    >
+                    <button key={item.id} className={cn('ds-nav-item', isActive(item.path) && 'active')}
+                      onClick={() => navigate(item.path)}>
                       <Icon className="h-4 w-4" />
                       <span>{item.label}</span>
                     </button>
@@ -415,10 +349,7 @@ export default function DashboardLayout() {
             {user?.role === 'admin' && (
               <div className="ds-sidebar-section">
                 <div className="ds-sidebar-section-label">Administration</div>
-                <button
-                  className={cn('ds-nav-item', isActive('/admin') && 'active')}
-                  onClick={() => navigate('/admin')}
-                >
+                <button className={cn('ds-nav-item', isActive('/admin') && 'active')} onClick={() => navigate('/admin')}>
                   <Shield className="h-4 w-4" />
                   <span>Admin Console</span>
                 </button>
@@ -435,14 +366,8 @@ export default function DashboardLayout() {
                 </span>
               </div>
               <div className="ds-usage-bar">
-                <div
-                  className={cn(
-                    'ds-usage-fill',
-                    usagePercent > 90 && 'critical',
-                    usagePercent > 70 && usagePercent <= 90 && 'warn'
-                  )}
-                  style={{ width: `${usagePercent}%` }}
-                />
+                <div className={cn('ds-usage-fill', usagePercent > 90 && 'critical', usagePercent > 70 && usagePercent <= 90 && 'warn')}
+                  style={{ width: `${usagePercent}%` }} />
               </div>
             </div>
           )}
@@ -453,11 +378,8 @@ export default function DashboardLayout() {
           {tabs.length > 0 && (
             <div className="ds-tab-strip">
               {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  className={cn('ds-tab', activeTab === tab.path && 'active')}
-                  onClick={() => { setActiveTab(tab.path); navigate(tab.path); }}
-                >
+                <button key={tab.id} className={cn('ds-tab', activeTab === tab.path && 'active')}
+                  onClick={() => { setActiveTab(tab.path); navigate(tab.path); }}>
                   {tab.icon}
                   <span>{tab.label}</span>
                   <span className="ds-tab-close" onClick={(e) => closeTab(e, tab.id)}>
@@ -490,28 +412,23 @@ export default function DashboardLayout() {
       <footer className="ds-statusbar">
         <div className="ds-statusbar-left">
           <span className="ds-status-item clickable">
-            <GitBranch className="h-3 w-3" />
-            main
+            <GitBranch className="h-3 w-3" /> main
           </span>
           <span className="ds-status-divider" />
           <span className="ds-status-item">
-            <CheckCircle2 className="h-3 w-3" />
-            No issues
+            <CheckCircle2 className="h-3 w-3" /> No issues
           </span>
           <span className="ds-status-divider" />
           <span className="ds-status-item clickable" onClick={() => navigate('/dashboard')}>
-            DataSuite v1.0
+            DataSuite v2.0
           </span>
         </div>
         <div className="ds-statusbar-right">
           <span className="ds-status-item">
-            <Wifi className="h-3 w-3" />
-            Connected
+            <Wifi className="h-3 w-3" /> Connected
           </span>
           <span className="ds-status-divider" />
-          <span className="ds-status-item">
-            {(user?.tier || 'free').replace('_', ' ')}
-          </span>
+          <span className="ds-status-item">{(user?.tier || 'free').replace('_', ' ')}</span>
           <span className="ds-status-divider" />
           <span className="ds-status-item">
             <Clock className="h-3 w-3" />
@@ -543,11 +460,8 @@ export default function DashboardLayout() {
               {filteredCommands.map(item => {
                 const Icon = item.icon;
                 return (
-                  <button
-                    key={item.label}
-                    className="ds-palette-item"
-                    onClick={() => { navigate(item.path); setShowSearch(false); setSearchQuery(''); }}
-                  >
+                  <button key={item.label} className="ds-palette-item"
+                    onClick={() => { navigate(item.path); setShowSearch(false); setSearchQuery(''); }}>
                     <div className="flex items-center">
                       <span className="ds-palette-item-icon"><Icon className="h-3.5 w-3.5" /></span>
                       {item.label}
@@ -562,26 +476,6 @@ export default function DashboardLayout() {
                 </p>
               )}
             </div>
-
-            {!searchQuery && (
-              <div className="ds-palette-section border-t" style={{ borderColor: 'var(--ds-border-subtle)' }}>
-                <div className="ds-palette-section-label">Keyboard Shortcuts</div>
-                {[
-                  ['Command Palette', 'Ctrl+K'],
-                  ['Toggle Sidebar', 'Ctrl+B'],
-                  ['IDE', 'Ctrl+1'],
-                  ['SQL Workbench', 'Ctrl+2'],
-                  ['Dashboard Studio', 'Ctrl+3'],
-                  ['AI Analyst', 'Ctrl+4'],
-                  ['Documents', 'Ctrl+5'],
-                ].map(([label, key]) => (
-                  <div key={label} className="flex items-center justify-between px-3 py-1">
-                    <span className="text-xs" style={{ color: 'var(--ds-text-dim)' }}>{label}</span>
-                    <kbd className="ds-kbd">{key}</kbd>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>

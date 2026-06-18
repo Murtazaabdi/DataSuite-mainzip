@@ -20,6 +20,7 @@ function initializeSqliteSchema(db: Database.Database) {
       role TEXT NOT NULL DEFAULT 'user',
       tier TEXT NOT NULL DEFAULT 'free',
       status TEXT NOT NULL DEFAULT 'pending',
+      passwordHash TEXT,
       totpSecret TEXT,
       totpEnabled INTEGER NOT NULL DEFAULT 0,
       totpVerified INTEGER NOT NULL DEFAULT 0,
@@ -113,6 +114,15 @@ function initializeSqliteSchema(db: Database.Database) {
         console.error('Error creating table:', err.message);
       }
     }
+  }
+
+  // Migrations for existing tables (safe: ALTER TABLE … ADD COLUMN IF NOT EXISTS is unsupported in SQLite,
+  // so we catch the "duplicate column" error and ignore it)
+  const migrations = [
+    `ALTER TABLE users ADD COLUMN passwordHash TEXT`,
+  ];
+  for (const m of migrations) {
+    try { db.exec(m); } catch (_) { /* column already exists — ignore */ }
   }
 }
 

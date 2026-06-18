@@ -10,6 +10,7 @@ import DashboardStudioPage from '@/pages/dashboard/DashboardStudioPage';
 import AIAnalystPage from '@/pages/dashboard/AIAnalystPage';
 import WorkspacePage from '@/pages/dashboard/WorkspacePage';
 import SettingsPage from '@/pages/dashboard/SettingsPage';
+import DataSourcesPage from '@/pages/dashboard/DataSourcesPage';
 import AdminLayout from '@/layouts/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import AdminUsers from '@/pages/admin/AdminUsers';
@@ -34,78 +35,27 @@ function App() {
   return (
     <ErrorBoundary label="Application">
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} />
 
-        {/* Dashboard Routes */}
-        <Route path="/dashboard" element={
-          isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />
-        }>
-          <Route index element={
-            <ErrorBoundary label="Dashboard Home">
-              <DashboardHome />
-            </ErrorBoundary>
-          } />
-          <Route path="ide" element={
-            <ErrorBoundary label="IDE">
-              <IDEPage />
-            </ErrorBoundary>
-          } />
-          <Route path="sql" element={
-            <ErrorBoundary label="SQL Workbench">
-              <SQLWorkbenchPage />
-            </ErrorBoundary>
-          } />
-          <Route path="studio" element={
-            <ErrorBoundary label="Dashboard Studio">
-              <DashboardStudioPage />
-            </ErrorBoundary>
-          } />
-          <Route path="ai" element={
-            <ErrorBoundary label="AI Analyst">
-              <AIAnalystPage />
-            </ErrorBoundary>
-          } />
-          <Route path="workspace" element={
-            <ErrorBoundary label="Workspace">
-              <WorkspacePage />
-            </ErrorBoundary>
-          } />
-          <Route path="settings" element={
-            <ErrorBoundary label="Settings">
-              <SettingsPage />
-            </ErrorBoundary>
-          } />
+        <Route path="/dashboard" element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
+          <Route index element={<ErrorBoundary label="Dashboard Home"><DashboardHome /></ErrorBoundary>} />
+          <Route path="ide" element={<ErrorBoundary label="IDE"><IDEPage /></ErrorBoundary>} />
+          <Route path="sql" element={<ErrorBoundary label="SQL Workbench"><SQLWorkbenchPage /></ErrorBoundary>} />
+          <Route path="studio" element={<ErrorBoundary label="Dashboard Studio"><DashboardStudioPage /></ErrorBoundary>} />
+          <Route path="ai" element={<ErrorBoundary label="AI Analyst"><AIAnalystPage /></ErrorBoundary>} />
+          <Route path="workspace" element={<ErrorBoundary label="Workspace"><WorkspacePage /></ErrorBoundary>} />
+          <Route path="settings" element={<ErrorBoundary label="Settings"><SettingsPage /></ErrorBoundary>} />
+          <Route path="datasources" element={<ErrorBoundary label="Data Sources"><DataSourcesPage /></ErrorBoundary>} />
         </Route>
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={
-          isAuthenticated && user?.role === 'admin' ? <AdminLayout /> : <Navigate to="/" />
-        }>
-          <Route index element={
-            <ErrorBoundary label="Admin Dashboard">
-              <AdminDashboard />
-            </ErrorBoundary>
-          } />
-          <Route path="users" element={
-            <ErrorBoundary label="Admin Users">
-              <AdminUsers />
-            </ErrorBoundary>
-          } />
-          <Route path="audit" element={
-            <ErrorBoundary label="Audit Logs">
-              <AdminAuditLogs />
-            </ErrorBoundary>
-          } />
-          <Route path="ai-config" element={
-            <ErrorBoundary label="AI Config">
-              <AdminAIConfig />
-            </ErrorBoundary>
-          } />
+        <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <AdminLayout /> : <Navigate to="/" />}>
+          <Route index element={<ErrorBoundary label="Admin Dashboard"><AdminDashboard /></ErrorBoundary>} />
+          <Route path="users" element={<ErrorBoundary label="Admin Users"><AdminUsers /></ErrorBoundary>} />
+          <Route path="audit" element={<ErrorBoundary label="Audit Logs"><AdminAuditLogs /></ErrorBoundary>} />
+          <Route path="ai-config" element={<ErrorBoundary label="AI Config"><AdminAIConfig /></ErrorBoundary>} />
         </Route>
 
-        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster position="top-right" theme="dark" />

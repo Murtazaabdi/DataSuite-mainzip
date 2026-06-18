@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   tier: mysqlEnum("tier", ["free", "analyst", "data_scientist", "enterprise"]).default("free").notNull(),
   status: mysqlEnum("status", ["pending", "approved", "rejected", "suspended"]).default("pending").notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
   totpSecret: varchar("totpSecret", { length: 255 }),
   totpEnabled: boolean("totpEnabled").default(false).notNull(),
   totpVerified: boolean("totpVerified").default(false).notNull(),

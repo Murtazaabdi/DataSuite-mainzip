@@ -6,6 +6,7 @@ import { dashboardRouter } from "./dashboard-router";
 import { workspaceRouter } from "./workspace-router";
 import { sqlRouter } from "./sql-router";
 import { codeRouter } from "./code-router";
+import { datasourcesRouter } from "./datasources-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -18,6 +19,7 @@ export const appRouter = createRouter({
   workspace: workspaceRouter,
   sql: sqlRouter,
   code: codeRouter,
+  datasources: datasourcesRouter,
 });
 
 export type AppRouter = typeof appRouter;

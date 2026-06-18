@@ -28,6 +28,7 @@ export async function createContext(
         role: "admin",
         tier: "enterprise",
         status: "approved",
+        passwordHash: null,
         totpSecret: null,
         totpEnabled: false,
         totpVerified: false,
