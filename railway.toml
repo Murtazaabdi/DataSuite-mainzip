@@ -1,0 +1,15 @@
+# Railway Deployment Configuration
+# This file helps Railway auto-detect your Node.js app
+
+# Build configuration
+[build]
+builder = "nixpacks"
+
+# Ensure we use Node 20+
+nixpacks.pkgs = ["nodejs"]
+nixpacks.env.NODE_VERSION = "20"
+
+# Port configuration
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5

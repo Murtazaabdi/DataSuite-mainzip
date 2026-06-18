@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      # Required variables
+      NODE_ENV: production
+      APP_ID: test_app_id
+      APP_SECRET: test_app_secret
+      DATABASE_URL: mysql://root:password@db:3306/datasuite
+      
+      # Cloud code execution (leave empty for local execution)
+      # REPLIT_API_KEY: your_replit_api_key_here
+      
+      # Auth URLs
+      KIMI_AUTH_URL: https://kimi.moonshot.cn/auth
+      KIMI_OPEN_URL: https://kimi.moonshot.cn
+      OWNER_UNION_ID: email:test@example.com
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - datasuite
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: datasuite
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - datasuite
+
+volumes:
+  db_data:
+
+networks:
+  datasuite:
+    driver: bridge

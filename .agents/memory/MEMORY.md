@@ -1,0 +1,4 @@
+- [DS-PaaS Stack](ds-paas-stack.md) — React 19 + Vite 7 + Hono + tRPC v11 + Drizzle/MySQL fullstack; superjson transformer required on both client and server.
+- [Kimi Auth Lazy Init](kimi-auth.md) — JWKS must be lazily initialized via getJwks() wrapper; do NOT call createRemoteJWKSet at module load time (crashes before DB is ready).
+- [IDE File Persistence](ide-persistence.md) — IDE files stored in localStorage under key "ide_files_v2"; always load from storage, fall back to defaults.
+- [Icon Availability](icon-availability.md) — lucide-react has AreaChart, Keyboard, AlignLeft, LineChart, PieChart — all verified available at runtime.
