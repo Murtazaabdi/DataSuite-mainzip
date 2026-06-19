@@ -1,10 +1,10 @@
 import type { Context } from "hono";
 import { setCookie } from "hono/cookie";
+import { env } from "../lib/env";
 import { getSessionCookieOptions } from "../lib/cookies";
 import { Session } from "@contracts/constants";
 import { signSessionToken } from "../kimi/session";
 import { upsertUser } from "../queries/users";
-import { getGoogleConfig, isGoogleConfigured } from "../lib/oauth-config";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -17,14 +17,13 @@ function getRedirectUri(origin: string) {
 
 export function createGoogleOAuthStartHandler() {
   return (c: Context) => {
-    if (!isGoogleConfigured()) {
+    if (!env.googleClientId) {
       return c.json({ error: "Google OAuth is not configured" }, 503);
     }
-    const { clientId } = getGoogleConfig();
     const origin = new URL(c.req.url).origin;
     const redirectUri = getRedirectUri(origin);
     const params = new URLSearchParams({
-      client_id: clientId,
+      client_id: env.googleClientId,
       redirect_uri: redirectUri,
       response_type: "code",
       scope: SCOPES,
@@ -47,17 +46,17 @@ export function createGoogleOAuthCallbackHandler() {
     }
 
     try {
-      const { clientId, clientSecret } = getGoogleConfig();
       const origin = state ? atob(state) : new URL(c.req.url).origin;
       const redirectUri = getRedirectUri(origin);
 
+      // Exchange code for tokens
       const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           code,
-          client_id: clientId,
-          client_secret: clientSecret,
+          client_id: env.googleClientId,
+          client_secret: env.googleClientSecret,
           redirect_uri: redirectUri,
           grant_type: "authorization_code",
         }).toString(),
@@ -67,14 +66,15 @@ export function createGoogleOAuthCallbackHandler() {
         throw new Error(`Token exchange failed: ${await tokenRes.text()}`);
       }
 
-      const tokens = (await tokenRes.json()) as { access_token: string };
+      const tokens = await tokenRes.json() as { access_token: string };
 
+      // Fetch user profile
       const profileRes = await fetch(GOOGLE_USERINFO_URL, {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
       if (!profileRes.ok) throw new Error("Failed to fetch Google profile");
 
-      const profile = (await profileRes.json()) as {
+      const profile = await profileRes.json() as {
         sub: string;
         name?: string;
         email?: string;
