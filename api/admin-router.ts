@@ -3,6 +3,12 @@ import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { users, auditLogs, aiUsage } from "@db/schema";
 import { eq, sql, desc, and, gte } from "drizzle-orm";
+import {
+  getFullOAuthConfig,
+  saveOAuthConfig,
+  clearCache,
+  isGoogleConfigured,
+} from "./lib/oauth-config";
 
 export const adminRouter = createRouter({
   // ── Dashboard Stats ──
@@ -274,5 +280,41 @@ export const adminRouter = createRouter({
       topUsers,
       models,
     };
+  }),
+
+  // ── OAuth Configuration ──
+  getOAuthConfig: adminQuery.query(async () => {
+    const config = getFullOAuthConfig();
+    return {
+      google: {
+        clientId: config.googleClientId || "",
+        clientSecretMasked: config.googleClientSecret
+          ? `${config.googleClientSecret.slice(0, 4)}${"•".repeat(Math.max(0, (config.googleClientSecret.length || 12) - 4))}`
+          : "",
+        configured: isGoogleConfigured(),
+      },
+    };
+  }),
+
+  saveGoogleOAuth: adminQuery
+    .input(
+      z.object({
+        clientId: z.string().min(1, "Client ID is required"),
+        clientSecret: z.string().min(1, "Client Secret is required"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      saveOAuthConfig({
+        googleClientId: input.clientId.trim(),
+        googleClientSecret: input.clientSecret.trim(),
+      });
+      clearCache();
+      return { success: true };
+    }),
+
+  clearGoogleOAuth: adminQuery.mutation(async () => {
+    saveOAuthConfig({ googleClientId: "", googleClientSecret: "" });
+    clearCache();
+    return { success: true };
   }),
 });

@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import { BrowserRouter } from 'react-router-dom'
 import { TRPCProvider } from '@/providers/trpc'
 import './index.css'
@@ -23,10 +24,13 @@ if (siteConfig.siteDescription) {
   meta.content = siteConfig.siteDescription
 }
 
-createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
-    <TRPCProvider>
-      <App />
-    </TRPCProvider>
-  </BrowserRouter>
-)
+const root = createRoot(document.getElementById('root')!)
+flushSync(() => {
+  root.render(
+    <BrowserRouter>
+      <TRPCProvider>
+        <App />
+      </TRPCProvider>
+    </BrowserRouter>
+  )
+})

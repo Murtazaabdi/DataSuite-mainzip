@@ -17,28 +17,29 @@ import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminAuditLogs from '@/pages/admin/AdminAuditLogs';
 import AdminAIConfig from '@/pages/admin/AdminAIConfig';
 import NotFound from '@/pages/NotFound';
-import { Spinner } from '@/components/ui/spinner';
 import { Toaster } from '@/components/ui/sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 function App() {
   const { user, isLoading, isAuthenticated } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#000000' }}>
-        <Spinner className="h-8 w-8" />
-      </div>
-    );
-  }
+  const authed = !isLoading && isAuthenticated;
+  const notAuthed = !isLoading && !isAuthenticated;
 
   return (
     <ErrorBoundary label="Application">
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} />
 
-        <Route path="/dashboard" element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
+        <Route
+          path="/login"
+          element={authed ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
+
+        <Route
+          path="/dashboard"
+          element={notAuthed ? <Navigate to="/login" replace /> : <DashboardLayout />}
+        >
           <Route index element={<ErrorBoundary label="Dashboard Home"><DashboardHome /></ErrorBoundary>} />
           <Route path="ide" element={<ErrorBoundary label="IDE"><IDEPage /></ErrorBoundary>} />
           <Route path="sql" element={<ErrorBoundary label="SQL Workbench"><SQLWorkbenchPage /></ErrorBoundary>} />
@@ -49,7 +50,10 @@ function App() {
           <Route path="datasources" element={<ErrorBoundary label="Data Sources"><DataSourcesPage /></ErrorBoundary>} />
         </Route>
 
-        <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <AdminLayout /> : <Navigate to="/" />}>
+        <Route
+          path="/admin"
+          element={notAuthed || user?.role !== 'admin' ? <Navigate to="/" replace /> : <AdminLayout />}
+        >
           <Route index element={<ErrorBoundary label="Admin Dashboard"><AdminDashboard /></ErrorBoundary>} />
           <Route path="users" element={<ErrorBoundary label="Admin Users"><AdminUsers /></ErrorBoundary>} />
           <Route path="audit" element={<ErrorBoundary label="Audit Logs"><AdminAuditLogs /></ErrorBoundary>} />
