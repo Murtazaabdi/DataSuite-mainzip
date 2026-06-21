@@ -11,7 +11,6 @@ import {
   bigint,
 } from "drizzle-orm/mysql-core";
 
-// ─── Users ───
 export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
   unionId: varchar("unionId", { length: 255 }).notNull().unique(),
@@ -50,7 +49,6 @@ export const auditLogs = mysqlTable("audit_logs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 
-// ─── Dashboards ───
 export const dashboards = mysqlTable("dashboards", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull().references(() => users.id),
@@ -68,7 +66,6 @@ export const dashboards = mysqlTable("dashboards", {
 
 export type Dashboard = typeof dashboards.$inferSelect;
 
-// ─── SQL Queries ───
 export const sqlQueries = mysqlTable("sql_queries", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull().references(() => users.id),
@@ -85,7 +82,6 @@ export const sqlQueries = mysqlTable("sql_queries", {
 
 export type SqlQuery = typeof sqlQueries.$inferSelect;
 
-// ─── Workspaces ───
 export const workspaces = mysqlTable("workspaces", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull().references(() => users.id),
